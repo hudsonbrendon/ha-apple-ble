@@ -1,2 +1,17 @@
+homeassistant>=2024.8.0
 pytest-homeassistant-custom-component
 apple-ble==0.1.1
+bleak-retry-connector>=3.5.0
+
+# Runtime deps of the HA bluetooth/usb components (installed by HA at runtime,
+# needed explicitly for the test harness — not part of the HA core wheel).
+aiousbwatcher
+habluetooth
+bluetooth-adapters
+bluetooth-data-tools
+bleak
+dbus-fast
+pyserial
+# Linux-only: HA's `usb` component (pulled in by the bluetooth stack) imports
+# pyudev on Linux.
+pyudev; sys_platform == "linux"
