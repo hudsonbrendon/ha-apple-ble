@@ -1,2 +1,2 @@
 pytest-homeassistant-custom-component
-apple-ble==0.1.0
+apple-ble==0.1.1
