@@ -8,6 +8,10 @@ CONF_RSSI_FLOOR = "rssi_floor"
 
 DEFAULT_RSSI_FLOOR = -75      # ignore adverts weaker than this (dBm)
 
+# Auto-discovery only fires for AirPods this close, so a neighbour's distant
+# AirPods don't get auto-pinned. Manual setup is not subject to this floor.
+DISCOVERY_RSSI_FLOOR = -55
+
 # Drop the cached AirPods state if no advert seen within this many seconds.
 # Used by the coordinator's auto-mode staleness reset (and will also serve Part C presence expiry).
 STALE_AFTER_SECONDS = 60

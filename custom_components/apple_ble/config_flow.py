@@ -10,7 +10,13 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
 from apple_ble import APPLE_MANUFACTURER_ID, MODEL_BY_CHAR, parse_proximity_pairing
 
-from .const import CONF_MODEL, CONF_RSSI_FLOOR, DEFAULT_RSSI_FLOOR, DOMAIN
+from .const import (
+    CONF_MODEL,
+    CONF_RSSI_FLOOR,
+    DEFAULT_RSSI_FLOOR,
+    DISCOVERY_RSSI_FLOOR,
+    DOMAIN,
+)
 
 # "" = auto (strongest RSSI). Other values pin a specific model.
 _MODEL_CHOICES = ["", *sorted(set(MODEL_BY_CHAR.values()))]
@@ -40,6 +46,10 @@ class AppleBleConfigFlow(ConfigFlow, domain=DOMAIN):
         parsed = parse_proximity_pairing(bytes(payload)) if payload else None
         if parsed is None:
             return self.async_abort(reason="not_airpods")
+        # Only auto-discover AirPods that are close by; a neighbour's distant
+        # AirPods would otherwise get auto-pinned in a dense RF environment.
+        if discovery_info.rssi < DISCOVERY_RSSI_FLOOR:
+            return self.async_abort(reason="too_far")
         self._discovered_model = parsed.model
         await self.async_set_unique_id(_unique_id(parsed.model))
         self._abort_if_unique_id_configured()

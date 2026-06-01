@@ -1,7 +1,7 @@
 {
   "domain": "apple_ble",
   "name": "Apple BLE",
-  "bluetooth": [{ "manufacturer_id": 76, "connectable": false }],
+  "bluetooth": [{ "manufacturer_id": 76, "manufacturer_data_start": [7], "connectable": false }],
   "codeowners": ["@hudsonbrendon"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
@@ -9,5 +9,5 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/hudsonbrendon/ha-apple-ble/issues",
   "requirements": ["apple-ble==0.1.0"],
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

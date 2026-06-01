@@ -78,7 +78,7 @@ async def test_bluetooth_discovery_happy_path(hass):
     """A valid AirPods Pro discovery advances to the confirm form, then creates an entry."""
     service_info = _make_service_info(
         "AA:BB:CC:DD:EE:01",
-        -60,
+        -45,  # strong RSSI: close = "yours", passes the discovery floor
         {76: _airpods_pro_payload()},
     )
 
@@ -118,7 +118,7 @@ async def test_bluetooth_discovery_already_configured_abort(hass):
     """A second bluetooth discovery for an already-configured model is aborted."""
     service_info = _make_service_info(
         "AA:BB:CC:DD:EE:03",
-        -60,
+        -45,
         {76: _airpods_pro_payload()},
     )
 
@@ -139,3 +139,18 @@ async def test_bluetooth_discovery_already_configured_abort(hass):
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_bluetooth_discovery_too_far_abort(hass):
+    """A valid AirPods advert that is too weak (distant = likely a neighbor) is ignored."""
+    service_info = _make_service_info(
+        "AA:BB:CC:DD:EE:05",
+        -70,  # weak: below the discovery floor (-55)
+        {76: _airpods_pro_payload()},
+    )
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "bluetooth"}, data=service_info
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "too_far"

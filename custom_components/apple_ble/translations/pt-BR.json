@@ -13,7 +13,8 @@
     },
     "abort": {
       "already_configured": "Este modelo de AirPods já está configurado.",
-      "not_airpods": "O dispositivo detectado não é um AirPods."
+      "not_airpods": "O dispositivo detectado não é um AirPods.",
+      "too_far": "AirPods detectado, mas longe demais para adicionar automaticamente. Abra a tampa da caixinha perto do adaptador Bluetooth, ou adicione manualmente."
     }
   }
 }
