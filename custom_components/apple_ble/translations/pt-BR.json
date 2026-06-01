@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Apple BLE",
+        "description": "Deixe o modelo vazio para rastrear automaticamente os AirPods mais próximos (RSSI mais forte), ou fixe um modelo específico.",
+        "data": { "model": "Modelo de AirPods (vazio = automático)" }
+      },
+      "confirm": {
+        "title": "Adicionar {model}",
+        "description": "Adicionar monitoramento de bateria para o {model} detectado?"
+      }
+    },
+    "abort": {
+      "already_configured": "Este modelo de AirPods já está configurado.",
+      "not_airpods": "O dispositivo detectado não é um AirPods."
+    }
+  }
+}

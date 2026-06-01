@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Apple BLE",
+        "description": "Leave the model empty to auto-track the strongest nearby AirPods, or pin a specific model.",
+        "data": { "model": "AirPods model (empty = auto)" }
+      },
+      "confirm": {
+        "title": "Add {model}",
+        "description": "Add battery tracking for the discovered {model}?"
+      }
+    },
+    "abort": {
+      "already_configured": "This AirPods model is already configured.",
+      "not_airpods": "The discovered device is not AirPods."
+    }
+  }
+}
