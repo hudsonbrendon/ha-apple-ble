@@ -50,4 +50,6 @@ async def test_charging_binary_sensors(hass):
     assert hass.states.get("binary_sensor.airpods_pro_right_charging").state == "on"
     assert hass.states.get("binary_sensor.airpods_pro_case_charging").state == "off"
     # An AirPods advert is also an Apple manufacturer-76 advert, so presence is on.
-    assert hass.states.get("binary_sensor.airpods_pro_apple_device_nearby").state == "on"
+    assert (
+        hass.states.get("binary_sensor.airpods_pro_apple_device_nearby").state == "on"
+    )

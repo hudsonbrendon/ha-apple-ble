@@ -11,16 +11,18 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .coordinator import AppleBleCoordinator
+from .entity import AppleBleEntity
 
 if TYPE_CHECKING:
     from apple_ble import AirPodsData
 
-from .const import DOMAIN
-from .coordinator import AppleBleCoordinator
-from .entity import AppleBleEntity
+    from . import AppleBleConfigEntry
+
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -71,10 +73,12 @@ BINARY_SENSORS: tuple[AppleBleBinaryDescription, ...] = (
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: AppleBleConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Apple BLE binary sensors."""
-    coordinator: AppleBleCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     async_add_entities(
         AppleBleBinarySensor(coordinator, entry.entry_id, entry.title, desc)
         for desc in BINARY_SENSORS
@@ -93,10 +97,12 @@ class AppleBleBinarySensor(AppleBleEntity, BinarySensorEntity):
         title: str,
         description: AppleBleBinaryDescription,
     ) -> None:
+        """Initialize the entity."""
         super().__init__(coordinator, entry_id, title)
         self.entity_description = description
         self._attr_unique_id = f"{entry_id}_{description.key}"
 
     @property
     def is_on(self) -> bool | None:
+        """Return the flag from the latest advert."""
         return self.entity_description.value_fn(self.coordinator)

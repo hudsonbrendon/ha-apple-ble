@@ -1,12 +1,12 @@
-"""Config flow for Apple BLE — stub (full implementation in B7)."""
+"""Config flow for Apple BLE."""
 
 from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+import voluptuous as vol
 
 from apple_ble import APPLE_MANUFACTURER_ID, MODEL_BY_CHAR, parse_proximity_pairing
 
@@ -36,6 +36,7 @@ class AppleBleConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
+        """Initialize the flow."""
         self._discovered_model: str | None = None
 
     async def async_step_bluetooth(

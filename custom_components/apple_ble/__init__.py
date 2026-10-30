@@ -2,21 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from homeassistant.components import bluetooth
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import CONF_MODEL, CONF_RSSI_FLOOR, DEFAULT_RSSI_FLOOR, DOMAIN, STALE_AFTER_SECONDS
+from .const import CONF_MODEL, CONF_RSSI_FLOOR, DEFAULT_RSSI_FLOOR, STALE_AFTER_SECONDS
 from .coordinator import AppleBleCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
+type AppleBleConfigEntry = ConfigEntry[AppleBleCoordinator]
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+
+async def async_setup_entry(hass: HomeAssistant, entry: AppleBleConfigEntry) -> bool:
     """Set up Apple BLE from a config entry."""
     coordinator = AppleBleCoordinator(
         hass,
@@ -27,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     @callback
     def _on_advert(
-        service_info: bluetooth.BluetoothServiceInfoBleak,
+        service_info: BluetoothServiceInfoBleak,
         change: bluetooth.BluetoothChange,
     ) -> None:
         coordinator.handle_advert(service_info)
@@ -42,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     @callback
-    def _async_tick(now) -> None:
+    def _async_tick(now: datetime) -> None:
         coordinator.refresh_presence()
 
     entry.async_on_unload(
@@ -51,14 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     )
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: AppleBleConfigEntry) -> bool:
     """Unload a config entry."""
-    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-    return unloaded
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
 
-from apple_ble import AirPodsData, APPLE_MANUFACTURER_ID, parse_proximity_pairing
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+
+from apple_ble import APPLE_MANUFACTURER_ID, AirPodsData, parse_proximity_pairing
 
 from .const import DOMAIN, STALE_AFTER_SECONDS
 
@@ -29,6 +29,7 @@ class AppleBleCoordinator:
     """
 
     def __init__(self, hass: HomeAssistant, model: str, rssi_floor: int) -> None:
+        """Initialize the coordinator."""
         self.hass = hass
         self.model = model  # "" => auto (strongest RSSI wins)
         self.rssi_floor = rssi_floor
@@ -52,11 +53,13 @@ class AppleBleCoordinator:
 
     @property
     def apple_devices_nearby(self) -> int:
+        """Number of distinct Apple devices seen recently."""
         self._prune()
         return len(self._recent)
 
     @property
     def any_apple_nearby(self) -> bool:
+        """Whether any Apple device was seen recently."""
         return self.apple_devices_nearby > 0
 
     @callback
@@ -79,7 +82,9 @@ class AppleBleCoordinator:
         parsed = parse_proximity_pairing(bytes(payload))
         airpods_changed = False
         if parsed is not None and not (self.model and parsed.model != self.model):
-            stale = self.last_seen is None or (now - self.last_seen) > STALE_AFTER_SECONDS
+            stale = (
+                self.last_seen is None or (now - self.last_seen) > STALE_AFTER_SECONDS
+            )
             accept = (
                 bool(self.model)
                 or self.best_rssi is None

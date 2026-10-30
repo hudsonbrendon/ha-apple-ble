@@ -3,10 +3,10 @@
 DOMAIN = "apple_ble"
 
 # Config entry data keys.
-CONF_MODEL = "model"          # pinned AirPods model name, or "" for auto (strongest RSSI)
+CONF_MODEL = "model"  # pinned AirPods model name, or "" for auto (strongest RSSI)
 CONF_RSSI_FLOOR = "rssi_floor"
 
-DEFAULT_RSSI_FLOOR = -75      # ignore adverts weaker than this (dBm)
+DEFAULT_RSSI_FLOOR = -75  # ignore adverts weaker than this (dBm)
 
 # Auto-discovery only fires for AirPods this close, so a neighbour's distant
 # AirPods don't get auto-pinned. Manual setup is not subject to this floor.
