@@ -1,16 +1,29 @@
-"""Config flow for Apple BLE — stub (full implementation in B7)."""
+"""Config flow for Apple BLE."""
 
 from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
+from homeassistant.core import callback
+import voluptuous as vol
 
-from apple_ble import APPLE_MANUFACTURER_ID, MODEL_BY_CHAR, parse_proximity_pairing
+from apple_ble import (
+    APPLE_MANUFACTURER_ID,
+    MODEL_BY_CHAR,
+    parse_key,
+    parse_proximity_pairing,
+)
 
 from .const import (
+    CONF_ENC_KEY,
+    CONF_IRK,
     CONF_MODEL,
     CONF_RSSI_FLOOR,
     DEFAULT_RSSI_FLOOR,
@@ -35,7 +48,14 @@ class AppleBleConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Keys are optional and live in the options flow."""
+        return AppleBleOptionsFlow()
+
     def __init__(self) -> None:
+        """Initialize the flow."""
         self._discovered_model: str | None = None
 
     async def async_step_bluetooth(
@@ -87,4 +107,38 @@ class AppleBleConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {vol.Required(CONF_MODEL, default=""): vol.In(_MODEL_CHOICES)}
             ),
+        )
+
+
+class AppleBleOptionsFlow(OptionsFlow):
+    """Optional AirPods keys (IRK + EncKey) from the Mac keychain."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the keys; empty fields disable the feature."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            for field in (CONF_IRK, CONF_ENC_KEY):
+                value = user_input.get(field, "").strip()
+                user_input[field] = value
+                if value:
+                    try:
+                        parse_key(value)
+                    except ValueError:
+                        errors[field] = "invalid_key"
+            if not errors:
+                return self.async_create_entry(data=user_input)
+        current = user_input or self.config_entry.options
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_IRK, default=current.get(CONF_IRK, "")): str,
+                    vol.Optional(
+                        CONF_ENC_KEY, default=current.get(CONF_ENC_KEY, "")
+                    ): str,
+                }
+            ),
+            errors=errors,
         )

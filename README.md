@@ -62,6 +62,36 @@ automatically via `manifest.json` `requirements`.
    `config/custom_components/` directory.
 2. Restart Home Assistant.
 
+## How it gets the data (important on HA 2026.x)
+
+Home Assistant's Bluetooth stack (`habluetooth`) silently **drops** Apple
+adverts whose first byte isn't `0x02/0x06/0x10/0x11/0x12` — AirPods
+proximity-pairing adverts (`0x07`) never reach any integration. Apple BLE
+therefore also reads the raw advert stream that every **ESPHome Bluetooth
+proxy** already sends to HA (a passive second handler on the same API
+connection — no extra subscription). **You need an ESPHome Bluetooth proxy in
+range**; the HA host's own adapter can't see AirPods while that filter exists.
+
+## Exact battery % and "your" AirPods only (optional keys)
+
+The advert has a clear half (battery in 10 % steps, charging, in-ear, case) and a
+16-byte half encrypted with a per-AirPods key that every paired Apple device
+holds. On a Mac that paired with the AirPods, run:
+
+```sh
+scripts/airpods_keys.sh          # reads keychain item "MobileBluetooth"
+```
+
+and paste both values in **Settings → Devices & Services → Apple BLE →
+Configure**:
+
+- **IRK** (`MagicAccIRK`) — resolves the rotating BLE address, so only *your*
+  AirPods are tracked (no RSSI guessing, neighbours ignored).
+- **EncKey** (`MagicAccEncKey`) — decrypts exact 1 % battery for left / right /
+  case and the device they're connected to.
+
+Keys stay in your HA config entry; nothing leaves your network.
+
 ## Setup
 
 1. **Open your AirPods case lid** right next to a Bluetooth adapter or proxy —
@@ -82,6 +112,8 @@ automatically via `manifest.json` `requirements`.
 | `sensor.<name>_case_battery` | Case battery level (%). |
 | `sensor.<name>_left_battery` | Left earbud battery level (%). |
 | `sensor.<name>_right_battery` | Right earbud battery level (%). |
+| `sensor.<name>_pods_in_case` | How many earbuds are in the case (0–2). |
+| `sensor.<name>_connected_to` | Last 3 bytes of the BT address of the device the AirPods are connected to (needs EncKey). Diagnostic. |
 | `sensor.<name>_signal_strength` | Bluetooth RSSI (dBm). Diagnostic, disabled by default. |
 | `sensor.<name>_apple_devices_nearby` | Count of distinct Apple devices seen recently. Diagnostic. |
 
@@ -92,20 +124,23 @@ automatically via `manifest.json` `requirements`.
 | `binary_sensor.<name>_case_charging` | On while the case is charging. |
 | `binary_sensor.<name>_left_charging` | On while the left earbud is charging. |
 | `binary_sensor.<name>_right_charging` | On while the right earbud is charging. |
+| `binary_sensor.<name>_left_in_ear` / `_right_in_ear` | Earbud is in an ear. |
+| `binary_sensor.<name>_case_lid` | Case lid open/closed while a bud is in the case; unknown with both buds in your ears. |
 | `binary_sensor.<name>_apple_device_nearby` | On while any Apple device is nearby. |
 
 ## Scope & limitations
 
-- **Battery updates when the lid is open.** AirPods broadcast their battery advert
-  reliably only when the case lid is opened (the same moment iOS shows the pairing
-  card). In normal use the entities hold the last known value; open the lid near an
-  adapter to refresh.
+- **When AirPods advertise.** Out of the case (in your ears) they advertise about
+  once a second; in a closed case they go quiet, so entities hold the last value.
+  Opening the lid refreshes them.
 - **Only AirPods expose battery.** Apple Watch / iPhone / Mac do **not** broadcast
   battery over BLE — they only contribute to the coarse "Apple device nearby"
   presence signal.
-- **MAC randomization.** Apple rotates the BLE MAC (~15 min) and the advert carries
-  no stable id, so "your" AirPods are matched by model + strongest RSSI. Auto-discovery
-  is RSSI-gated so a neighbour's distant AirPods aren't picked up.
+- **MAC randomization.** Apple rotates the BLE MAC (~15 min). Without the IRK
+  "your" AirPods are matched by model + strongest RSSI; with the IRK they are
+  identified exactly.
+- **Auto-discovery** relies on HA's Bluetooth matcher, which the filter above
+  blocks; add the integration manually.
 
 ## Credits
 

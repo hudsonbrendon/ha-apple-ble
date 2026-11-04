@@ -3,9 +3,9 @@ import time
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from habluetooth.models import BluetoothServiceInfoBleak
+from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.apple_ble.const import CONF_MODEL, DOMAIN
-from homeassistant.data_entry_flow import FlowResultType
 
 
 def _make_service_info(

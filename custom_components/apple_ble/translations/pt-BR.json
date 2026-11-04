@@ -4,7 +4,9 @@
       "user": {
         "title": "Apple BLE",
         "description": "Deixe o modelo vazio para rastrear automaticamente os AirPods mais próximos (RSSI mais forte), ou fixe um modelo específico.",
-        "data": { "model": "Modelo de AirPods (vazio = automático)" }
+        "data": {
+          "model": "Modelo de AirPods (vazio = automático)"
+        }
       },
       "confirm": {
         "title": "Adicionar {model}",
@@ -15,6 +17,69 @@
       "already_configured": "Este modelo de AirPods já está configurado.",
       "not_airpods": "O dispositivo detectado não é um AirPods.",
       "too_far": "AirPods detectado, mas longe demais para adicionar automaticamente. Abra a tampa da caixinha perto do adaptador Bluetooth, ou adicione manualmente."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Chaves dos AirPods (opcional)",
+        "description": "Cole MagicAccIRK e MagicAccEncKey do Keychain do Mac (item \"MobileBluetooth\", conta = endereço dos AirPods). O IRK fixa exatamente os seus AirPods; a EncKey libera bateria em % exato e o aparelho conectado. Deixe vazio para desativar. Ajuda: scripts/airpods_keys.sh.",
+        "data": {
+          "irk": "IRK (MagicAccIRK)",
+          "enc_key": "Chave de criptografia (MagicAccEncKey)"
+        }
+      }
+    },
+    "error": {
+      "invalid_key": "Precisa ter 16 bytes em hex (ex.: FE-47-…)."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "left_battery": {
+        "name": "Bateria esquerdo"
+      },
+      "right_battery": {
+        "name": "Bateria direito"
+      },
+      "case_battery": {
+        "name": "Bateria do case"
+      },
+      "pods_in_case": {
+        "name": "Fones no case"
+      },
+      "connected_host": {
+        "name": "Conectado a"
+      },
+      "rssi": {
+        "name": "Intensidade do sinal"
+      },
+      "apple_devices_nearby": {
+        "name": "Dispositivos Apple por perto"
+      }
+    },
+    "binary_sensor": {
+      "left_charging": {
+        "name": "Esquerdo carregando"
+      },
+      "right_charging": {
+        "name": "Direito carregando"
+      },
+      "case_charging": {
+        "name": "Case carregando"
+      },
+      "left_in_ear": {
+        "name": "Esquerdo no ouvido"
+      },
+      "right_in_ear": {
+        "name": "Direito no ouvido"
+      },
+      "lid_open": {
+        "name": "Tampa do case"
+      },
+      "apple_nearby": {
+        "name": "Dispositivo Apple por perto"
+      }
     }
   }
 }

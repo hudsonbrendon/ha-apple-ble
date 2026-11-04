@@ -17,8 +17,8 @@ Uso:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+import sys
 
 from PIL import Image
 
@@ -53,6 +53,7 @@ def _wide(img: Image.Image, width: int) -> Image.Image:
 
 
 def main(icon_src: str, logo_src: str, out_dir: str, assets_logo: str | None) -> None:
+    """Render the brand icon and logo PNGs."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -88,4 +89,9 @@ if __name__ == "__main__":
         sys.exit(
             "uso: python scripts/make_brand.py <icon_src.png> <logo_src> <out_dir> [assets_logo.png]"
         )
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) == 5 else None)
+    main(
+        sys.argv[1],
+        sys.argv[2],
+        sys.argv[3],
+        sys.argv[4] if len(sys.argv) == 5 else None,
+    )

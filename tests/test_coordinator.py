@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from unittest.mock import patch
 
-from custom_components.apple_ble.coordinator import AppleBleCoordinator
 from custom_components.apple_ble.const import STALE_AFTER_SECONDS
+from custom_components.apple_ble.coordinator import AppleBleCoordinator
 
 
 @dataclass
@@ -49,14 +49,18 @@ async def test_coordinator_model_pin_filters_other_models(hass):
 async def test_coordinator_weaker_ignored_within_freshness_window(hass):
     """Within the freshness window, a weaker advert must not replace a stronger one."""
     t0 = 1000.0
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t0):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t0
+    ):
         coord = AppleBleCoordinator(hass, model="", rssi_floor=-75)
         strong = _Info("AA:BB:CC:00:00:05", -40, {76: _airpods_payload()})
         coord.handle_advert(strong)
 
     # Feed a weaker advert well within STALE_AFTER_SECONDS.
     t_within = t0 + STALE_AFTER_SECONDS / 2
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t_within):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t_within
+    ):
         weaker = _Info("AA:BB:CC:00:00:06", -70, {76: _airpods_payload()})
         coord.handle_advert(weaker)
 
@@ -66,7 +70,9 @@ async def test_coordinator_weaker_ignored_within_freshness_window(hass):
 async def test_coordinator_stale_winner_accepts_weaker_advert(hass):
     """Once the previous winner goes stale, a weaker (but above-floor) advert is accepted."""
     t0 = 1000.0
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t0):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t0
+    ):
         coord = AppleBleCoordinator(hass, model="", rssi_floor=-75)
         strong = _Info("AA:BB:CC:00:00:07", -40, {76: _airpods_payload()})
         coord.handle_advert(strong)
@@ -75,7 +81,9 @@ async def test_coordinator_stale_winner_accepts_weaker_advert(hass):
 
     # Advance time past STALE_AFTER_SECONDS so the winner is considered stale.
     t_stale = t0 + STALE_AFTER_SECONDS + 1
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t_stale):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t_stale
+    ):
         weaker = _Info("AA:BB:CC:00:00:08", -70, {76: _airpods_payload()})
         coord.handle_advert(weaker)
 
@@ -100,7 +108,9 @@ async def test_presence_counts_distinct_recent_apple_devices(hass):
 async def test_presence_decays_after_staleness(hass):
     """Devices that stop advertising must drop from the count after STALE_AFTER_SECONDS."""
     t0 = 5000.0
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t0):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t0
+    ):
         coord = AppleBleCoordinator(hass, model="", rssi_floor=-90)
         coord.handle_advert(_Info("AA:BB:CC:00:00:20", -55, {76: b"\x10\x05abcd"}))
         coord.handle_advert(_Info("AA:BB:CC:00:00:21", -60, {76: b"\x10\x05efgh"}))
@@ -108,6 +118,8 @@ async def test_presence_decays_after_staleness(hass):
 
     # Advance monotonic past STALE_AFTER_SECONDS; no new adverts arrive.
     t_stale = t0 + STALE_AFTER_SECONDS + 1
-    with patch("custom_components.apple_ble.coordinator.time.monotonic", return_value=t_stale):
+    with patch(
+        "custom_components.apple_ble.coordinator.time.monotonic", return_value=t_stale
+    ):
         assert coord.apple_devices_nearby == 0
         assert coord.any_apple_nearby is False
