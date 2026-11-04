@@ -17,3 +17,5 @@ bluetooth-auto-recovery
 # Linux-only: HA's `usb` component (pulled in by the bluetooth stack) imports
 # pyudev on Linux.
 pyudev; sys_platform == "linux"
+# Imported by the ESPHome tap tests (ships with HA's esphome integration).
+aioesphomeapi
