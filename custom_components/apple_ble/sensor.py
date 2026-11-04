@@ -85,13 +85,6 @@ SENSORS: tuple[AppleBleSensorDescription, ...] = (
         value_fn=_host,
     ),
     AppleBleSensorDescription(
-        key="lid_open_count",
-        translation_key="lid_open_count",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-        value_fn=_battery("lid_open_count"),
-    ),
-    AppleBleSensorDescription(
         key="rssi",
         translation_key="rssi",
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,

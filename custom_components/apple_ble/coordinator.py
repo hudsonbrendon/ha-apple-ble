@@ -54,6 +54,7 @@ class AppleBleCoordinator:
         self.data: AirPodsData | None = None
         self.decrypted: DecryptedStatus | None = None
         self.address: str | None = None
+        self._state: dict[str, int | bool | None] = {}
         self.best_rssi: int | None = None
         self.last_seen: float | None = None
         self.entry_id: str | None = None
@@ -122,6 +123,7 @@ class AppleBleCoordinator:
             )
             self.data = parsed
             self.decrypted = decrypted
+            self._merge(parsed, decrypted)
             self.best_rssi = rssi
             self.address = address
 
@@ -141,10 +143,28 @@ class AppleBleCoordinator:
             or rssi >= self.best_rssi
         )
 
+    def _merge(self, parsed: AirPodsData, dec: DecryptedStatus | None) -> None:
+        """Fold one frame into the sticky state.
+
+        Each bud advertises on its own (rotating) address and a bud in a closed
+        case goes silent, so the other bud reports it as unknown; keep the last
+        known battery/charging per side instead of flapping to unknown.
+        """
+        src = dec or parsed
+        st = self._state
+        for side in ("left", "right", "case"):
+            battery = getattr(src, f"{side}_battery")
+            if battery is not None:
+                st[f"{side}_battery"] = battery
+                st[f"{side}_charging"] = getattr(src, f"{side}_charging")
+        st["left_in_ear"] = parsed.left_in_ear
+        st["right_in_ear"] = parsed.right_in_ear
+        st["pods_in_case"] = parsed.pods_in_case
+        if parsed.lid_open is not None:
+            st["lid_open"] = parsed.lid_open
+        elif parsed.left_in_ear and parsed.right_in_ear:
+            st["lid_open"] = None  # both buds out: nothing reports the lid
+
     def value(self, field: str) -> int | bool | None:
-        """Exact value from the decrypted half when fresh, else the clear part."""
-        if self.data is None:
-            return None
-        if self.decrypted is not None and hasattr(self.decrypted, field):
-            return getattr(self.decrypted, field)
-        return getattr(self.data, field)
+        """Latest known value of an AirPods field (None until first advert)."""
+        return self._state.get(field)

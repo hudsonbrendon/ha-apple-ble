@@ -51,9 +51,6 @@
       "connected_host": {
         "name": "Connected to"
       },
-      "lid_open_count": {
-        "name": "Lid open counter"
-      },
       "rssi": {
         "name": "Signal strength"
       },

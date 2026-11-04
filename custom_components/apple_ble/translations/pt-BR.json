@@ -51,9 +51,6 @@
       "connected_host": {
         "name": "Conectado a"
       },
-      "lid_open_count": {
-        "name": "Contador de abertura da tampa"
-      },
       "rssi": {
         "name": "Intensidade do sinal"
       },

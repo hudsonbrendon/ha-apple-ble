@@ -109,3 +109,20 @@ async def test_options_flow_validates_keys(hass):
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {CONF_IRK: key, CONF_ENC_KEY: key}
+
+
+async def test_closed_case_bud_keeps_last_known(hass):
+    """Real sequence: left bud in open case (charging), lid closes, it goes silent."""
+    irk, enc, addr = _keys_and_addr()
+    coord = AppleBleCoordinator(hass, model="", rssi_floor=-75, irk=irk)
+    a = addr.hex(":").upper()
+    head = bytes.fromhex("0719011420")
+    coord.handle_payload(a, -60, head + bytes.fromhex("73789f510004") + bytes(16))
+    assert coord.value("lid_open") is True and coord.value("left_charging") is True
+    coord.handle_payload(a, -60, head + bytes.fromhex("737897590004") + bytes(16))
+    assert coord.value("lid_open") is False
+    # Right bud now reports left unknown and no pod in case.
+    coord.handle_payload(a, -60, head + bytes.fromhex("02f78f110004") + bytes(16))
+    assert coord.value("left_battery") == 80 and coord.value("left_charging") is True
+    assert coord.value("lid_open") is False
+    assert coord.value("right_battery") == 70

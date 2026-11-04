@@ -114,7 +114,6 @@ Keys stay in your HA config entry; nothing leaves your network.
 | `sensor.<name>_right_battery` | Right earbud battery level (%). |
 | `sensor.<name>_pods_in_case` | How many earbuds are in the case (0–2). |
 | `sensor.<name>_connected_to` | Last 3 bytes of the BT address of the device the AirPods are connected to (needs EncKey). Diagnostic. |
-| `sensor.<name>_lid_open_counter` | Rolling lid-open counter from the advert. Diagnostic, disabled by default. |
 | `sensor.<name>_signal_strength` | Bluetooth RSSI (dBm). Diagnostic, disabled by default. |
 | `sensor.<name>_apple_devices_nearby` | Count of distinct Apple devices seen recently. Diagnostic. |
 
@@ -126,7 +125,7 @@ Keys stay in your HA config entry; nothing leaves your network.
 | `binary_sensor.<name>_left_charging` | On while the left earbud is charging. |
 | `binary_sensor.<name>_right_charging` | On while the right earbud is charging. |
 | `binary_sensor.<name>_left_in_ear` / `_right_in_ear` | Earbud is in an ear. |
-| `binary_sensor.<name>_case_lid` | Case lid open (only meaningful while a bud is in the case). |
+| `binary_sensor.<name>_case_lid` | Case lid open/closed while a bud is in the case; unknown with both buds in your ears. |
 | `binary_sensor.<name>_apple_device_nearby` | On while any Apple device is nearby. |
 
 ## Scope & limitations
