@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - Unreleased
+
+- Read AirPods adverts directly from ESPHome Bluetooth proxies: HA's
+  habluetooth drops Apple `0x07` adverts before integrations see them.
+- Optional IRK + EncKey (options flow, `scripts/airpods_keys.sh` for macOS):
+  exact 1 % battery, connected-device suffix, pin your own AirPods.
+- New entities: left/right in ear, case lid, pods in case, connected to,
+  lid-open counter. Entity names translated (en, pt-BR).
+- Requires `apple-ble==0.2.0`.
+
 ## 0.1.3 - Unreleased
 
 - Target Home Assistant 2026.10 / Python 3.14 (HACS floor 2025.6.0).

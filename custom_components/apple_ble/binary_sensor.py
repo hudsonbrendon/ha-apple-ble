@@ -18,8 +18,6 @@ from .coordinator import AppleBleCoordinator
 from .entity import AppleBleEntity
 
 if TYPE_CHECKING:
-    from apple_ble import AirPodsData
-
     from . import AppleBleConfigEntry
 
 PARALLEL_UPDATES = 0
@@ -34,8 +32,7 @@ class AppleBleBinaryDescription(BinarySensorEntityDescription):
 
 def _flag(field: str) -> Callable[[AppleBleCoordinator], bool | None]:
     def _get(coord: AppleBleCoordinator) -> bool | None:
-        data: AirPodsData | None = coord.data
-        return getattr(data, field) if data is not None else None
+        return coord.value(field)  # type: ignore[return-value]
 
     return _get
 
@@ -44,28 +41,42 @@ BINARY_SENSORS: tuple[AppleBleBinaryDescription, ...] = (
     AppleBleBinaryDescription(
         key="left_charging",
         translation_key="left_charging",
-        name="Left charging",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         value_fn=_flag("left_charging"),
     ),
     AppleBleBinaryDescription(
         key="right_charging",
         translation_key="right_charging",
-        name="Right charging",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         value_fn=_flag("right_charging"),
     ),
     AppleBleBinaryDescription(
         key="case_charging",
         translation_key="case_charging",
-        name="Case charging",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         value_fn=_flag("case_charging"),
     ),
     AppleBleBinaryDescription(
+        key="left_in_ear",
+        translation_key="left_in_ear",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+        value_fn=_flag("left_in_ear"),
+    ),
+    AppleBleBinaryDescription(
+        key="right_in_ear",
+        translation_key="right_in_ear",
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+        value_fn=_flag("right_in_ear"),
+    ),
+    AppleBleBinaryDescription(
+        key="lid_open",
+        translation_key="lid_open",
+        device_class=BinarySensorDeviceClass.OPENING,
+        value_fn=_flag("lid_open"),
+    ),
+    AppleBleBinaryDescription(
         key="apple_nearby",
         translation_key="apple_nearby",
-        name="Apple device nearby",
         device_class=BinarySensorDeviceClass.PRESENCE,
         value_fn=lambda coord: coord.any_apple_nearby,
     ),

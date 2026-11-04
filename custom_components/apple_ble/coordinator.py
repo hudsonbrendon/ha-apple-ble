@@ -9,7 +9,14 @@ from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from apple_ble import APPLE_MANUFACTURER_ID, AirPodsData, parse_proximity_pairing
+from apple_ble import (
+    APPLE_MANUFACTURER_ID,
+    AirPodsData,
+    DecryptedStatus,
+    decrypt_status,
+    parse_proximity_pairing,
+    resolve_rpa,
+)
 
 from .const import DOMAIN, STALE_AFTER_SECONDS
 
@@ -28,12 +35,25 @@ class AppleBleCoordinator:
     and there is no stable device to poll (MAC randomizes).
     """
 
-    def __init__(self, hass: HomeAssistant, model: str, rssi_floor: int) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        model: str,
+        rssi_floor: int,
+        irk: bytes | None = None,
+        enc_key: bytes | None = None,
+    ) -> None:
         """Initialize the coordinator."""
         self.hass = hass
         self.model = model  # "" => auto (strongest RSSI wins)
         self.rssi_floor = rssi_floor
+        # With the IRK only *these* AirPods are accepted (no RSSI guessing);
+        # with the EncKey batteries are exact and the connected host is known.
+        self.irk = irk
+        self.enc_key = enc_key
         self.data: AirPodsData | None = None
+        self.decrypted: DecryptedStatus | None = None
+        self.address: str | None = None
         self.best_rssi: int | None = None
         self.last_seen: float | None = None
         self.entry_id: str | None = None
@@ -64,11 +84,16 @@ class AppleBleCoordinator:
 
     @callback
     def handle_advert(self, service_info: BluetoothServiceInfoBleak) -> None:
-        """Process one Apple BLE advert (BluetoothServiceInfoBleak)."""
-        if service_info.rssi < self.rssi_floor:
-            return
+        """Process one Apple BLE advert from HA's Bluetooth stack."""
         payload = (service_info.manufacturer_data or {}).get(APPLE_MANUFACTURER_ID)
-        if payload is None:
+        if payload is not None:
+            self.handle_payload(service_info.address, service_info.rssi, bytes(payload))
+
+    @callback
+    def handle_payload(self, address: str, rssi: int, payload: bytes) -> None:
+        """Process manufacturer_data[76] (type byte first) from any source."""
+        mine = self.irk is not None and resolve_rpa(address, self.irk)
+        if rssi < self.rssi_floor and not mine:
             return
 
         now = time.monotonic()
@@ -76,26 +101,50 @@ class AppleBleCoordinator:
         # (AirPods, Watch, iPhone, Mac). MAC rotation means we can't say which.
         self._prune()
         before = len(self._recent)
-        self._recent[service_info.address] = now
+        self._recent[address] = now
         presence_changed = len(self._recent) != before
 
-        parsed = parse_proximity_pairing(bytes(payload))
+        parsed = parse_proximity_pairing(payload)
         airpods_changed = False
-        if parsed is not None and not (self.model and parsed.model != self.model):
-            stale = (
-                self.last_seen is None or (now - self.last_seen) > STALE_AFTER_SECONDS
+        if parsed is not None and self._accept(parsed, rssi, mine, now):
+            decrypted = (
+                decrypt_status(payload, self.enc_key, flipped=parsed.flipped)
+                if mine and self.enc_key is not None
+                else None
             )
-            accept = (
-                bool(self.model)
-                or self.best_rssi is None
-                or stale
-                or service_info.rssi >= self.best_rssi
+            self.last_seen = now
+            airpods_changed = parsed != self.data or (
+                decrypted is not None
+                and (
+                    self.decrypted is None
+                    or decrypted.raw[:7] != self.decrypted.raw[:7]
+                )
             )
-            if accept:
-                self.last_seen = now
-                airpods_changed = parsed != self.data
-                self.data = parsed
-                self.best_rssi = service_info.rssi
+            self.data = parsed
+            self.decrypted = decrypted
+            self.best_rssi = rssi
+            self.address = address
 
         if (airpods_changed or presence_changed) and self.entry_id is not None:
             async_dispatcher_send(self.hass, signal_updated(self.entry_id))
+
+    def _accept(self, parsed: AirPodsData, rssi: int, mine: bool, now: float) -> bool:
+        if self.irk is not None:
+            return mine
+        if self.model and parsed.model != self.model:
+            return False
+        stale = self.last_seen is None or (now - self.last_seen) > STALE_AFTER_SECONDS
+        return (
+            bool(self.model)
+            or self.best_rssi is None
+            or stale
+            or rssi >= self.best_rssi
+        )
+
+    def value(self, field: str) -> int | bool | None:
+        """Exact value from the decrypted half when fresh, else the clear part."""
+        if self.data is None:
+            return None
+        if self.decrypted is not None and hasattr(self.decrypted, field):
+            return getattr(self.decrypted, field)
+        return getattr(self.data, field)

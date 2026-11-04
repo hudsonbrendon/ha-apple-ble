@@ -1,5 +1,5 @@
 pytest-homeassistant-custom-component==0.13.375
-apple-ble==0.1.1
+apple-ble==0.2.0
 bleak-retry-connector
 ruff
 
