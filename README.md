@@ -172,3 +172,60 @@ Author [@hudsonbrendon](https://github.com/hudsonbrendon).
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Experimental native Bluetooth reception
+
+Apple BLE can optionally receive Apple proximity pairing
+advertisements through the Bluetooth manager when the
+required opt-in API is available.
+
+This experimental implementation depends on
+[habluetooth PR #662](https://github.com/Bluetooth-Devices/habluetooth/pull/662).
+
+### Reception modes
+
+| Bluetooth environment | Reception method |
+| --- | --- |
+| Native API available | Bluetooth manager opt-in callback |
+| Native API unavailable | Existing ESPHome tap |
+| Standard advertisements | Existing Home Assistant callback |
+
+The regular Home Assistant Bluetooth callback remains
+registered in both modes.
+
+The native API is explicitly registered for Apple message
+type `0x07`. Default Bluetooth discovery behavior is not
+changed by this integration.
+
+### Real-world validation
+
+The experimental implementation was tested with:
+
+- Home Assistant Container 2026.11.1
+- habluetooth 7.1.2 with the proposed API backported
+- Python 3.14 on ARM64
+- Raspberry Pi 5 and BlueZ 5.82
+- Apple AirPods (2nd generation), model A2031
+- Local Bluetooth adapter
+- Remote ESPHome-compatible Raspberry Pi Bluetooth proxy
+
+Both scanner sources delivered Apple proximity pairing
+advertisements to the native callback.
+
+Battery data was successfully decoded and published
+through Home Assistant entities.
+
+### Compatibility and limitations
+
+- The native API is not assumed to be available in
+  standard Home Assistant releases.
+- Existing installations without the API continue to
+  use the ESPHome compatibility path.
+- Native reception does not provide active AirPods control.
+- Battery precision and device identity retain the
+  limitations of the existing decoder and key configuration.
+- Full compatibility with every ESPHome proxy and raw
+  advertisement scenario has not yet been established.
+
+No experimental habluetooth package is installed
+automatically by this integration.

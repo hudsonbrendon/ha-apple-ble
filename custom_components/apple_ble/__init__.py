@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import logging
 
+from habluetooth import get_manager
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigEntry
@@ -24,6 +26,9 @@ from .const import (
 )
 from .coordinator import AppleBleCoordinator
 from .esphome_tap import EsphomeTap
+from .native_bluetooth import register_native_callback
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -58,20 +63,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: AppleBleConfigEntry) -> 
         )
     )
 
-    # HA's Bluetooth stack drops AirPods (0x07) adverts; read ESPHome proxies.
-    tap = EsphomeTap(hass, coordinator.handle_payload)
-    tap.refresh()
-    entry.async_on_unload(tap.close)
-
-    @callback
-    def _async_tap(now: datetime) -> None:
-        tap.refresh()
-
-    entry.async_on_unload(
-        async_track_time_interval(
-            hass, _async_tap, timedelta(seconds=TAP_REFRESH_SECONDS)
-        )
+    # Use native filtered Apple advertisements when supported.
+    # Otherwise preserve the existing ESPHome fallback.
+    manager = get_manager()
+    cancel_native = register_native_callback(
+        manager,
+        coordinator.handle_advert,
     )
+
+    if cancel_native is not None:
+        entry.async_on_unload(cancel_native)
+        _LOGGER.debug(
+            "Native Apple BLE reception enabled via habluetooth"
+        )
+    else:
+        # Compatibility path for older Bluetooth managers.
+        tap = EsphomeTap(hass, coordinator.handle_payload)
+        tap.refresh()
+        entry.async_on_unload(tap.close)
+
+        @callback
+        def _async_tap(now: datetime) -> None:
+            tap.refresh()
+
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass,
+                _async_tap,
+                timedelta(seconds=TAP_REFRESH_SECONDS),
+            )
+        )
+        _LOGGER.debug("ESPHome compatibility reception enabled")
+
     entry.async_on_unload(entry.add_update_listener(_async_reload))
 
     @callback
