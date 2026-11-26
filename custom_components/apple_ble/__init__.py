@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta
+import logging
 
+from habluetooth import get_manager
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigEntry
@@ -13,7 +14,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_interval
 
 from apple_ble import parse_key
-from habluetooth import get_manager
 
 from .const import (
     CONF_ENC_KEY,
