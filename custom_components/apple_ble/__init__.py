@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import logging
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -12,6 +13,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_interval
 
 from apple_ble import parse_key
+from habluetooth import get_manager
 
 from .const import (
     CONF_ENC_KEY,
@@ -24,6 +26,8 @@ from .const import (
 )
 from .coordinator import AppleBleCoordinator
 from .esphome_tap import EsphomeTap
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -58,20 +62,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: AppleBleConfigEntry) -> 
         )
     )
 
-    # HA's Bluetooth stack drops AirPods (0x07) adverts; read ESPHome proxies.
-    tap = EsphomeTap(hass, coordinator.handle_payload)
-    tap.refresh()
-    entry.async_on_unload(tap.close)
-
-    @callback
-    def _async_tap(now: datetime) -> None:
-        tap.refresh()
-
-    entry.async_on_unload(
-        async_track_time_interval(
-            hass, _async_tap, timedelta(seconds=TAP_REFRESH_SECONDS)
-        )
+    # Use native filtered Apple advertisements when supported.
+    # Otherwise preserve the existing ESPHome fallback.
+    manager = get_manager()
+    register_filtered = getattr(
+        manager,
+        "async_register_filtered_apple_callback",
+        None,
     )
+
+    if callable(register_filtered):
+        entry.async_on_unload(
+            register_filtered(
+                coordinator.handle_advert,
+                message_type=0x07,
+            )
+        )
+        _LOGGER.info(
+            "Native Apple BLE reception enabled via habluetooth"
+        )
+    else:
+        # HA's Bluetooth stack drops AirPods (0x07) adverts; read ESPHome proxies.
+        tap = EsphomeTap(hass, coordinator.handle_payload)
+        tap.refresh()
+        entry.async_on_unload(tap.close)
+
+        @callback
+        def _async_tap(now: datetime) -> None:
+            tap.refresh()
+
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass, _async_tap, timedelta(seconds=TAP_REFRESH_SECONDS)
+            )
+        )
     entry.async_on_unload(entry.add_update_listener(_async_reload))
 
     @callback
